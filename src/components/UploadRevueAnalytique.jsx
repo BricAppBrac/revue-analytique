@@ -54,6 +54,23 @@ function readBalanceSheet(workbook, sheetName) {
   return map;
 }
 
+// Applique un format numérique à une colonne entière (sauf l'en-tête)
+function applyNumberFormatToColumn(sheet, colLetter, formatString) {
+  if (!sheet || !sheet["!ref"]) return;
+
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  const colIndex = XLSX.utils.decode_col(colLetter);
+
+  // On commence à la ligne 1 (index 0 = en-tête)
+  for (let row = range.s.r + 1; row <= range.e.r; row++) {
+    const addr = XLSX.utils.encode_cell({ r: row, c: colIndex });
+    const cell = sheet[addr];
+    if (cell && typeof cell.v === "number") {
+      cell.z = formatString;
+    }
+  }
+}
+
 export default function UploadRevueAnalytique() {
   const [file, setFile] = useState(null);
   const [workbook, setWorkbook] = useState(null);
@@ -166,6 +183,31 @@ export default function UploadRevueAnalytique() {
       if (!newWb.SheetNames.includes("Revue analytique")) {
         newWb.SheetNames.push("Revue analytique");
       }
+
+            const MONEY_FORMAT =
+        "_-* #,##0.00_-;\\-* #,##0.00_-;_-* \"-\"??_-;_-@_-";
+      const PERCENT_FORMAT = "0.0%";
+
+      // 📌 1) Mise en forme des onglets existants : colonne C en monétaire
+      newWb.SheetNames.forEach((name) => {
+        if (name === "Revue analytique") return; // on traite à part
+        const sheet = newWb.Sheets[name];
+        applyNumberFormatToColumn(sheet, "C", MONEY_FORMAT);
+      });
+
+      // 📌 2) Mise en forme de l'onglet "Revue analytique"
+      const sheetRevue = newWb.Sheets["Revue analytique"];
+      if (sheetRevue) {
+        // Colonnes C, D, E en monétaire
+        applyNumberFormatToColumn(sheetRevue, "C", MONEY_FORMAT);
+        applyNumberFormatToColumn(sheetRevue, "D", MONEY_FORMAT);
+        applyNumberFormatToColumn(sheetRevue, "E", MONEY_FORMAT);
+
+        // Colonne F en pourcentage, 1 décimale
+        applyNumberFormatToColumn(sheetRevue, "F", PERCENT_FORMAT);
+      }
+
+
 
       const wbout = XLSX.write(newWb, {
         bookType: "xlsx",
