@@ -1,0 +1,108 @@
+// couleurs
+$brown: rgb(37, 21, 11);
+$grey: rgba(187, 176, 159, 0.644);
+$green1: rgb(193, 220, 171);
+$green2: rgb(40, 75, 35);
+$orange: rgb(214, 86, 48);
+$purple: rgb(56, 15, 110);
+$wine: rgb(110, 15, 50);
+$blue: rgb(4, 26, 85);
+$lightblue: rgb(132, 159, 236);
+$verylightblue: rgb(198, 208, 233);
+$red: rgb(168, 10, 29);
+
+// polices
+@font-face {
+  font-family: "Comic";
+  src: url(../fonts/ComicRelief.ttf);
+}
+
+$font1: Comic, sans-serif;
+
+// paramètres généraux
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+
+  li {
+    list-style: none;
+  }
+}
+
+body {
+  font-family: $font1;
+  background: $blue;
+  height: 100vh;
+  color: $brown;
+
+  h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+    text-align: center;
+    font-family: $font1;
+    letter-spacing: 1.5px;
+    color: $green1;
+
+    @media screen and (max-width: 1300px) {
+      font-size: 2.6rem;
+    }
+    @media screen and (max-width: 1000px) {
+      font-size: 2.4rem;
+    }
+    @media screen and (max-width: 800px) {
+      font-size: 2.2rem;
+      padding: 10px auto;
+      margin: 0 auto;
+    }
+    @media screen and (max-width: 430px) {
+      font-size: 1.9rem;
+    }
+  }
+
+  h2 {
+    padding: 10px 15px;
+    font-size: 2.4rem;
+    font-family: $font1;
+    font-weight: 100px;
+    text-align: center;
+    color: $green2;
+
+    @media screen and (max-width: 1300px) {
+      font-size: 2.3rem;
+    }
+    @media screen and (max-width: 1000px) {
+      font-size: 2.1rem;
+    }
+    @media screen and (max-width: 800px) {
+      font-size: 1.9rem;
+    }
+    @media screen and (max-width: 500px) {
+      font-size: 1.7rem;
+    }
+    @media screen and (max-width: 430px) {
+      font-size: 1.6rem;
+    }
+  }
+
+  h3 {
+    margin: 5px auto;
+    padding: 5px;
+  }
+
+  .upload-head {
+    h3 {
+      margin: 5px 10px;
+    }
+  }
+
+  h4 {
+    margin: 5px auto;
+    padding: 5px;
+  }
+}

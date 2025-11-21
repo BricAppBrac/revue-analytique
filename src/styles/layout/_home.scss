@@ -1,0 +1,108 @@
+@use "../settings" as *;
+
+.home {
+  display: flex;
+  flex-direction: column;
+
+  margin: 20px;
+
+  .home-title {
+    display: flex;
+    flex-direction: row;
+    margin: 5px auto;
+
+    button {
+      width: 50px;
+      padding: 5px;
+      border-radius: 20px;
+      font-size: 1.4rem;
+      margin: 0 20px;
+      background: $green1;
+      color: $brown;
+    }
+  }
+
+  .home-content {
+    margin: 5px auto;
+
+    .upload-content {
+      .upload-head {
+        display: flex;
+        flex-direction: row;
+        background: $verylightblue;
+        border-radius: 20px;
+
+        .file-name {
+          background: $green2;
+          padding: 5px 5px;
+          border-radius: 6px;
+
+          margin-top: 8px;
+        }
+      }
+
+      .row-title,
+      .row-select {
+        display: flex;
+        flex-direction: row;
+        justify-content: left;
+      }
+    }
+
+    input,
+    label,
+    select {
+      font-size: 1.1rem;
+      font-family: $font1;
+      max-width: 600px;
+      margin: 5px 10px;
+      height: 50px;
+    }
+
+    label,
+    h3 {
+      color: $green1;
+    }
+
+    select {
+      background-color: $orange;
+    }
+
+    .option-selected {
+      background-color: $green1;
+    }
+    .default-selected {
+      background-color: $green2;
+    }
+
+    button {
+      font-size: 1.2rem;
+      padding: 5px;
+      border-radius: 20px;
+      background: $red;
+      color: wheat;
+      margin: 0 10px;
+      text-align: center;
+    }
+
+    p {
+      font-size: 1.4rem;
+      margin: 15px;
+      padding: 5px;
+      color: white;
+      background-color: $red;
+      text-align: center;
+      border-radius: 20px;
+    }
+
+    .form-submit {
+      display: flex;
+      flex-direction: row;
+      margin-top: 20px;
+
+      h2 {
+        font-size: 1.6rem;
+      }
+    }
+  }
+}
