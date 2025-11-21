@@ -16,11 +16,25 @@ function readBalanceSheet(workbook, sheetName) {
   rows.forEach((row) => {
     const compte = row["Compte"];
     const libelle = row["Libellé"];
-    const solde = row["Solde"];
 
     if (!compte) return;
 
-    const s = typeof solde === "number" ? solde : Number(solde || 0);
+    // 🔹 Cherche la colonne "Solde" même s'il y a des espaces autour
+  const soldeKey = Object.keys(row).find(
+    (key) => key && key.trim() === "Solde"
+  );
+
+  const rawSolde = soldeKey ? row[soldeKey] : 0;
+
+  const s =
+    typeof rawSolde === "number"
+      ? rawSolde
+      : Number(
+          (rawSolde ?? "")
+            .toString()
+            .replace(/\s/g, "") // enlève les espaces
+            .replace(",", ".")  // au cas où, pour les décimales
+        );
 
     if (!map.has(compte)) {
       map.set(compte, {
