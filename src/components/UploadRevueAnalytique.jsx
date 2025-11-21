@@ -2,74 +2,230 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+/**
+ * Lecture d'un onglet de balance :
+ * Retourne une Map : compte → { compte, libelle, solde }
+ */
+function readBalanceSheet(workbook, sheetName) {
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return new Map();
+
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: null });
+  const map = new Map();
+
+  rows.forEach((row) => {
+    const compte = row["Compte"];
+    const libelle = row["Libellé"];
+    const solde = row["Solde"];
+
+    if (!compte) return;
+
+    const s = typeof solde === "number" ? solde : Number(solde || 0);
+
+    if (!map.has(compte)) {
+      map.set(compte, {
+        compte,
+        libelle: libelle || "",
+        solde: s || 0,
+      });
+    } else {
+      const existing = map.get(compte);
+      existing.solde += s || 0;
+      if (!existing.libelle && libelle) {
+        existing.libelle = libelle;
+      }
+    }
+  });
+
+  return map;
+}
+
 export default function UploadRevueAnalytique() {
   const [file, setFile] = useState(null);
+  const [workbook, setWorkbook] = useState(null);
   const [sheetNames, setSheetNames] = useState([]);
   const [selectedN, setSelectedN] = useState("");
   const [selectedN1, setSelectedN1] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
+  /**
+   * Chargement du fichier Excel
+   */
   const handleFile = (e) => {
     const f = e.target.files[0];
+    if (!f) return;
+
     setFile(f);
+    setInfoMessage("");
+    setErrorMessage("");
+    setSheetNames([]);
+    setSelectedN("");
+    setSelectedN1("");
 
     const reader = new FileReader();
     reader.onload = (evt) => {
       const data = evt.target.result;
-      const workbook = XLSX.read(data, { type: "binary" });
+      const wb = XLSX.read(data, { type: "array" });
 
-      setSheetNames(workbook.SheetNames);
+      setWorkbook(wb);
+      setSheetNames(wb.SheetNames || []);
     };
-    reader.readAsBinaryString(f);
+
+    reader.readAsArrayBuffer(f);
+  };
+
+  /**
+   * Génération de la Revue Analytique dans un nouvel onglet
+   */
+  const handleGenerate = () => {
+    setInfoMessage("");
+    setErrorMessage("");
+
+    if (!file || !workbook) {
+      setErrorMessage("Merci de sélectionner un fichier Excel.");
+      return;
+    }
+    if (!selectedN || !selectedN1) {
+      setErrorMessage(
+        "Merci de choisir les onglets pour les périodes N et N-1."
+      );
+      return;
+    }
+
+    try {
+      const mapN = readBalanceSheet(workbook, selectedN);
+      const mapN1 = readBalanceSheet(workbook, selectedN1);
+
+      const allComptes = new Set([
+        ...Array.from(mapN.keys()),
+        ...Array.from(mapN1.keys()),
+      ]);
+
+      const rows = [];
+
+      allComptes.forEach((compte) => {
+        const recN = mapN.get(compte);
+        const recN1 = mapN1.get(compte);
+
+        const libelle = recN?.libelle || recN1?.libelle || "";
+        const soldeN = recN?.solde ?? 0;
+        const soldeN1 = recN1?.solde ?? 0;
+
+        const variationEur = soldeN - soldeN1;
+        const variationPct =
+          soldeN1 !== 0 ? variationEur / soldeN1 : null;
+
+        rows.push([
+          compte,
+          libelle,
+          soldeN,
+          soldeN1,
+          variationEur,
+          variationPct,
+        ]);
+      });
+
+      rows.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+
+      // En-têtes = noms d’onglets sélectionnés
+      const header = [
+        "Compte",
+        "Libellé",
+        selectedN.replace(/\s+/g, ""),   // titre colonne N
+        selectedN1.replace(/\s+/g, ""),  // titre colonne N-1
+        "Variation €",
+        "Variation %",
+      ];
+
+      const dataForSheet = [header, ...rows];
+
+      const wsRevue = XLSX.utils.aoa_to_sheet(dataForSheet);
+
+      const newWb = {
+        ...workbook,
+        Sheets: { ...workbook.Sheets },
+        SheetNames: [...workbook.SheetNames],
+      };
+
+      newWb.Sheets["Revue analytique"] = wsRevue;
+      if (!newWb.SheetNames.includes("Revue analytique")) {
+        newWb.SheetNames.push("Revue analytique");
+      }
+
+      const wbout = XLSX.write(newWb, {
+        bookType: "xlsx",
+        type: "array",
+      });
+
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const baseName = file.name.replace(/(\.xlsm?|\.XLSM?)$/, "");
+      const outName = `${baseName}_revue_analytique.xlsx`;
+
+      saveAs(blob, outName);
+
+      setInfoMessage('Feuille "Revue analytique" générée avec succès.');
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(
+        "Une erreur est survenue. Vérifie les colonnes : Compte / Libellé / Solde."
+      );
+    }
   };
 
   return (
-    <div class="upload-content">
+    <div className="upload-content">
       <div className="upload-head">
         <div className="upload-title">
-      <h2>Fichier Source</h2>
-      <input type="file" accept=".xlsx,.xlsm" onChange={handleFile} />
-      {file && (
-  <p className="file-name">
-    {file.name}
-  </p>
-)}
- </div>
+          <h2>Fichier Source</h2>
+          <p>Sélectionne un fichier Excel contenant les balances N et N-1.</p>
+
+          <input type="file" accept=".xlsx,.xlsm" onChange={handleFile} />
+
+          {file && <p className="file-name">{file.name}</p>}
+        </div>
       </div>
+
       {sheetNames.length > 0 && (
         <>
-          <h3>Choisir les onglets à comparer</h3>
+          <div className="row-select">
+            <div className="period-block">
+              <h3>Période N (la plus récente)</h3>
+              <label>Onglet :</label>
+              <select value={selectedN} onChange={(e) => setSelectedN(e.target.value)}>
+                <option value="">-- choisir un onglet --</option>
+                {sheetNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
 
-          <label>Période N :</label>
-          <select
-            value={selectedN}
-            onChange={(e) => setSelectedN(e.target.value)}
-          >
-            <option value="">-- choisir --</option>
-            {sheetNames.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            <div className="period-block">
+              <h3>Période N-1</h3>
+              <label>Onglet :</label>
+              <select value={selectedN1} onChange={(e) => setSelectedN1(e.target.value)}>
+                <option value="">-- choisir un onglet --</option>
+                {sheetNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-          <br />
-          <br />
-
-          <label>Période N-1 :</label>
-          <select
-            value={selectedN1}
-            onChange={(e) => setSelectedN1(e.target.value)}
-          >
-            <option value="">-- choisir --</option>
-            {sheetNames.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          <div className="form-submit">
+            <button type="button" onClick={handleGenerate}>
+              Générer la Revue Analytique
+            </button>
+          </div>
         </>
       )}
-      
+
+      {infoMessage && <p className="info-message">{infoMessage}</p>}
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
     </div>
   );
 }
+

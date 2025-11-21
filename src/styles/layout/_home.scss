@@ -40,7 +40,15 @@
           margin-top: 8px;
         }
       }
+      .info-message {
+        margin-top: 16px;
+        color: $green1;
+      }
 
+      .error-message {
+        margin-top: 16px;
+        color: red;
+      }
       .row-title,
       .row-select {
         display: flex;
